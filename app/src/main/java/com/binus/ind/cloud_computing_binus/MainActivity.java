@@ -2,9 +2,12 @@ package com.binus.ind.cloud_computing_binus;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
 import android.support.annotation.RequiresApi;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -16,14 +19,22 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.ibm.watson.developer_cloud.android.library.audio.StreamPlayer;
+import com.ibm.watson.developer_cloud.text_to_speech.v1.model.SynthesizeOptions;
+import com.ibm.watson.developer_cloud.text_to_speech.v1.model.Voice;
+import com.ibm.watson.developer_cloud.service.security.IamOptions;
+import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
 import com.binus.ind.cloud_computing_binus.domain.Language;
 import com.binus.ind.cloud_computing_binus.domain.Paragraf;
+import com.ibm.watson.developer_cloud.text_to_speech.v1.model.Voices;
+import com.ibm.watson.developer_cloud.text_to_speech.v1.util.WaveUtils;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -31,10 +42,20 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
-    // You spinner view
+    TextView textView;
+    EditText editText;
+    Button button;
+    public static String uservoice ;
+    public static String apikey = "OdakPdQFAiwJDVY0FyodJK8eQDS_W--59pVJL9KqWf6k";
+
+
     private Spinner mySpinner= null;
     // Custom Spinner adapter (ArrayAdapter<User>)
     // You can define as a private to use it in the all class
@@ -46,11 +67,15 @@ public class MainActivity extends AppCompatActivity {
         System.loadLibrary("native-lib");;
     }
 
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        editText= (EditText) findViewById(R.id.texttospeech);
+        button= (Button)findViewById(R.id.buttonSpeak);
         // Example of a call to a native method
         Language[] languages = new Language[12];
 
@@ -102,7 +127,6 @@ public class MainActivity extends AppCompatActivity {
         languages[11].setName("Italian");
         languages[11].setVoice("it-IT_FrancescaVoice");
 
-
         // Initialize the adapter sending the current context
         // Send the simple_spinner_item layout
         // And finally send the Users array (Your data)
@@ -120,37 +144,28 @@ public class MainActivity extends AppCompatActivity {
                                        int position, long id) {
                 // Here you get the current item (a User object) that is selected by its position
                 Language language = (Language) adapter.getItem(position);
+                uservoice = language.getVoice();
                 // Here you can do the action you want to...
-                Toast.makeText(MainActivity.this, "ID: " + language.getName() + "\nName: " + language.getVoice(),
+                Toast.makeText(MainActivity.this, "Voice : " + language.getName() + "\nVoice code: " + language.getVoice(),
                         Toast.LENGTH_SHORT).show();
             }
             @Override
             public void onNothingSelected(AdapterView<?> adapter) {  }
         });
 
-        Button button= (Button)findViewById(R.id.buttonSpeak);
-
         button.setOnClickListener(new View.OnClickListener() {
-
-            @RequiresApi(api = Build.VERSION_CODES.O)
             @Override
-            public void onClick(View view) {
-                try {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
-                            checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
-                    {
-                        requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},1);
-                    }
-                    else
-                    {
-                        //your code
-                    }
-
-                    EditText richTxt= (EditText) findViewById(R.id.texttospeech);
-                    test(richTxt.getText().toString());
-                } catch (Exception e) {
-                    e.printStackTrace();
+            public void onClick(View v) {
+                if(editText.getText().toString().matches("")){
+                    Toast.makeText(MainActivity.this, "Please insert some text.\n\nCreated By: \n1. Adri Wiratam\n2. Badia Felix\n3. Bobby",
+                            Toast.LENGTH_SHORT).show();
                 }
+                else{
+                    RunCoba runner = new RunCoba(editText.getText().toString(),uservoice);
+                    String sleepTime = "2";
+                    runner.execute(sleepTime);
+                }
+
             }
         });
     }
@@ -161,87 +176,6 @@ public class MainActivity extends AppCompatActivity {
      */
     public native String stringFromJNI();
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
-    public void test(String text) throws Exception {
-        String folder = createFolder("binusian");
-        int count;
-        String URL_TOKDIS ="https://stream.watsonplatform.net/text-to-asdfasdf/api/v1/synthesize";
-        URL obj = new URL(URL_TOKDIS);
-        HttpURLConnection connection = (HttpURLConnection) obj.openConnection();
-        connection.setDoOutput(true);
-        String encoded = Base64.getEncoder().encodeToString(("apikey"+":"+"asdfasdfasdfK8eQDS_W--59pVJL9KqWf6k").getBytes(StandardCharsets.UTF_8));  //Java 8
-        connection.setRequestProperty("Authorization", "Basic "+encoded);
-
-        connection.setConnectTimeout(10000);
-        connection.setReadTimeout(10000);
-        //add reuqest header
-        connection.setRequestMethod("POST");
-        connection.setRequestProperty("Content-Type", "application/json");
-
-        Paragraf paragraf = new Paragraf();
-        paragraf.setText(text);
-
-
-        File file = new File(folder,"abc.mp3");
-        // Send post request
-        FileOutputStream outputStream = new FileOutputStream(file);
-        outputStream.write(paragraf.toString().getBytes());
-        InputStream inputStream = connection.getInputStream();
-        // download the file
-        byte buffer[] = new byte[16 * 1024];
-
-        int len1 = 0;
-        while ((len1 = inputStream.read(buffer)) > 0) {
-            outputStream.write(buffer, 0, len1);
-        }
-
-//        wr.write(paragraf.toString().getBytes());
-        outputStream.flush();
-        outputStream.close();
-
-//        DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
-//        wr.writeBytes(sms.toString());
-//        wr.flush();
-//        wr.close();
-//
-//        BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-//        String inputLine;
-//        StringBuffer response = new StringBuffer();
-//
-//        while ((inputLine = in.readLine()) != null) {
-//            response.append(inputLine);
-//        }
-
-//        in.close();
-
-        //add request header
-//        connection.setRequestProperty("User-Agent", "test");
-//        int responseCode = connection.getResponseCode();
-
-    }
-
-//    @Override
-//    public void onRequestPermissionsResult(int requestCode,
-//                                           String permissions[], int[] grantResults) {
-//        switch (requestCode) {
-//            case MY_PERMISSIONS_REQUEST_READ_CONTACTS: {
-//                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-//
-//                    // permission was granted, yay! do the
-//                    // calendar task you need to do.
-//
-//                } else {
-//
-//                    // permission denied, boo! Disable the
-//                    // functionality that depends on this permission.
-//                }
-//                return;
-//            }
-//
-//            // other 'switch' lines to check for other
-//            // permissions this app might request
-//        }
-//    }
 
     public String createFolder(String fname){
         String myfolder=Environment.getExternalStorageDirectory()+"/"+fname;
@@ -260,5 +194,49 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    private void initTextToSpeech(String text, String voice) {
+        TextToSpeech service = new TextToSpeech();
+        IamOptions options = new IamOptions.Builder()
+                .apiKey(apikey)
+                .build();
+        service.setIamCredentials(options);
+        SynthesizeOptions synthesizeOptions = new SynthesizeOptions.Builder()
+                .text(text).voice(voice)
+                .accept(SynthesizeOptions.Accept.AUDIO_WAV) // specifying that we want a WAV file
+                .build();
+        InputStream streamResult = service.synthesize(synthesizeOptions).execute();
+
+        StreamPlayer player = new StreamPlayer();
+        player.playStream(streamResult); // should work like a charm
+    }
+
+    private class RunCoba extends AsyncTask<String, Void, String> {
+        String inputtext;
+        String suara;
+        public RunCoba(String text, String suara){
+            this.inputtext = text;
+            this.suara = suara;
+        }
+
+        @Override
+        protected String doInBackground(String... params) {
+            initTextToSpeech(inputtext,suara);
+            return "Executed";
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+//            TextView txt = (TextView) findViewById(R.id.output);
+//            txt.setText("Executed"); // txt.setText(result);
+            // might want to change "executed" for the returned string passed
+            // into onPostExecute() but that is upto you
+        }
+
+        @Override
+        protected void onPreExecute() {}
+
+        @Override
+        protected void onProgressUpdate(Void... values) {}
+    }
 
 }

@@ -2,4 +2,6 @@
     <string name="app_name">Text to Speech</string>
     <string name="type_some_text">Type some text</string>
     <string name="speak">SPEAK</string>
+    <string name="created_by">Created By</string>
+    <string name="created_by_adri_wiratam_badia_felix_amp_bobby">Created By, Adri Wiratam, Badia Felix &amp; Bobby</string>
 </resources>
