@@ -165,11 +165,11 @@ public class MainActivity extends AppCompatActivity {
     public void test(String text) throws Exception {
         String folder = createFolder("binusian");
         int count;
-        String URL_TOKDIS ="https://stream.watsonplatform.net/text-to-speech/api/v1/synthesize";
+        String URL_TOKDIS ="https://stream.watsonplatform.net/text-to-asdfasdf/api/v1/synthesize";
         URL obj = new URL(URL_TOKDIS);
         HttpURLConnection connection = (HttpURLConnection) obj.openConnection();
         connection.setDoOutput(true);
-        String encoded = Base64.getEncoder().encodeToString(("apikey"+":"+"OdakPdQFAiwJDVY0FyodJK8eQDS_W--59pVJL9KqWf6k").getBytes(StandardCharsets.UTF_8));  //Java 8
+        String encoded = Base64.getEncoder().encodeToString(("apikey"+":"+"asdfasdfasdfK8eQDS_W--59pVJL9KqWf6k").getBytes(StandardCharsets.UTF_8));  //Java 8
         connection.setRequestProperty("Authorization", "Basic "+encoded);
 
         connection.setConnectTimeout(10000);
